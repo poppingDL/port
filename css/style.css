@@ -1,0 +1,211 @@
+/* ========== 港口生产数字化大屏 · 深色科技风 ========== */
+:root {
+  --bg-deep: #050b18;
+  --bg-panel: rgba(8, 20, 40, 0.72);
+  --border-glow: rgba(0, 180, 255, 0.35);
+  --text-main: #cfe9ff;
+  --text-dim: #5d7ea8;
+  --accent-cyan: #00d4ff;
+  --accent-blue: #1e6fff;
+  --accent-green: #00ffa3;
+  --accent-red: #ff4d6d;
+  --accent-orange: #ffb020;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  background: var(--bg-deep);
+  color: var(--text-main);
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+}
+
+body {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(30, 111, 255, 0.15), transparent 60%),
+    radial-gradient(ellipse at 50% 100%, rgba(0, 212, 255, 0.08), transparent 50%),
+    var(--bg-deep);
+}
+
+/* ========== 顶部栏 ========== */
+.top-bar {
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 40px;
+  background: linear-gradient(180deg, rgba(8, 20, 40, 0.95), rgba(8, 20, 40, 0.6));
+  border-bottom: 1px solid var(--border-glow);
+  position: relative;
+}
+.top-bar::after {
+  content: "";
+  position: absolute;
+  left: 10%; right: 10%; bottom: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+  filter: blur(0.5px);
+}
+.top-bar__title {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 6px;
+  background: linear-gradient(90deg, #fff, var(--accent-cyan));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 18px rgba(0, 212, 255, 0.3);
+}
+.top-bar__left, .top-bar__right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 16px;
+  color: var(--text-dim);
+  min-width: 320px;
+}
+.top-bar__right { justify-content: flex-end; }
+.top-bar__clock { color: var(--accent-cyan); font-variant-numeric: tabular-nums; font-size: 18px; }
+
+.status-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--accent-green);
+  box-shadow: 0 0 8px var(--accent-green);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+/* ========== 三栏布局 ========== */
+.layout {
+  height: calc(1080px - 72px);
+  display: grid;
+  grid-template-columns: 380px 1fr 380px;
+  gap: 16px;
+  padding: 16px;
+}
+
+/* ========== 面板通用 ========== */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow: hidden;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.kpi-card, .chart-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-glow);
+  border-radius: 6px;
+  padding: 14px 16px;
+  position: relative;
+  backdrop-filter: blur(6px);
+}
+.kpi-card::before, .chart-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0;
+  width: 14px; height: 14px;
+  border-top: 2px solid var(--accent-cyan);
+  border-left: 2px solid var(--accent-cyan);
+}
+.kpi-card::after, .chart-card::after {
+  content: "";
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 14px; height: 14px;
+  border-bottom: 2px solid var(--accent-cyan);
+  border-right: 2px solid var(--accent-cyan);
+}
+
+.kpi-card__label { font-size: 14px; color: var(--text-dim); margin-bottom: 6px; }
+.kpi-card__value {
+  font-size: 30px; font-weight: 700;
+  color: var(--accent-cyan);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.4);
+}
+.kpi-card__trend { font-size: 12px; margin-top: 4px; }
+.kpi-card__trend--up { color: var(--accent-green); }
+.kpi-card__trend--down { color: var(--accent-red); }
+
+.chart-card__title {
+  font-size: 15px; color: var(--text-main);
+  margin-bottom: 10px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent-blue);
+}
+.chart-card canvas { width: 100%; display: block; }
+.chart-card--list { flex: 1; display: flex; flex-direction: column; }
+
+/* ========== 船舶/告警列表 ========== */
+.ship-list, .alert-list {
+  list-style: none;
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ship-list li, .alert-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 10px;
+  font-size: 13px;
+  background: rgba(0, 212, 255, 0.06);
+  border-left: 2px solid var(--accent-blue);
+  border-radius: 3px;
+}
+.ship-list .ship-name { color: var(--text-main); }
+.ship-list .ship-status { color: var(--accent-green); font-size: 12px; }
+.ship-list .ship-status--wait { color: var(--accent-orange); }
+.alert-list .alert-time { color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.alert-list .alert-level--high { color: var(--accent-red); }
+.alert-list .alert-level--mid { color: var(--accent-orange); }
+.alert-list .alert-level--low { color: var(--accent-green); }
+
+/* ========== 中央场景 ========== */
+.scene-wrap {
+  position: relative;
+  border: 1px solid var(--border-glow);
+  border-radius: 6px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #04101f, #06182e);
+}
+#scene-container { width: 100%; height: 100%; }
+#scene-container canvas { display: block; }
+
+.scene-overlay {
+  position: absolute;
+  padding: 8px 14px;
+  font-size: 14px;
+  color: var(--text-dim);
+  background: rgba(5, 11, 24, 0.6);
+  border: 1px solid var(--border-glow);
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+}
+.scene-overlay span { color: var(--accent-cyan); font-weight: 700; font-size: 18px; }
+.scene-overlay--bl { bottom: 50px; left: 20px; }
+.scene-overlay--br { bottom: 50px; right: 20px; }
+.scene-tag {
+  position: absolute;
+  top: 16px; left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 18px;
+  font-size: 13px;
+  color: var(--accent-cyan);
+  background: rgba(5, 11, 24, 0.5);
+  border: 1px solid var(--border-glow);
+  border-radius: 20px;
+  letter-spacing: 2px;
+}
