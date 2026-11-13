@@ -1,18 +1,26 @@
-// ========== 模拟实时数据源 ==========
-// 大屏展示用模拟数据，每秒刷新一次，模拟港口生产实时指标
+// ========== 港口生产实时数据源 ==========
+// 大屏展示用模拟数据，按真实时钟生成，模拟港口生产指标的实时波动
 
-const SHIP_NAMES = [
-  '中远海运·太平洋', '招商轮船·远鉴', '东方海外·海耀',
-  '马士基·阿尔忒', '达飞·安特卫普', '赫伯罗特·柏林'
+const SHIP_POOL = [
+  { name: '中远海运·太平洋', berth: '1# 泊位' },
+  { name: '招商轮船·远鉴', berth: '2# 泊位' },
+  { name: '东方海外·海耀', berth: '3# 泊位' },
+  { name: '马士基·阿尔忒', berth: '4# 泊位' },
+  { name: '达飞·安特卫普', berth: '5# 泊位' },
+  { name: '赫伯罗特·柏林', berth: '锚地' },
+  { name: '长荣·明珠', berth: '6# 泊位' },
+  { name: '地中海·索菲亚', berth: '锚地' }
 ];
 
 const ALERT_TEMPLATES = [
-  { level: 'high', text: '3号岸桥液压压力异常' },
-  { level: 'mid', text: 'B堆场冷藏箱温度偏高' },
-  { level: 'low', text: '5号泊位作业正常完成' },
-  { level: 'mid', text: '集卡排队时长超阈值' },
-  { level: 'high', text: '船舶靠泊距离告警' },
-  { level: 'low', text: '夜间巡检正常' }
+  { level: 'high', text: '3# 岸桥液压系统压力异常' },
+  { level: 'mid', text: 'B 堆场冷藏箱温度偏高 2.4℃' },
+  { level: 'low', text: '5# 泊位装船作业完成，已结关' },
+  { level: 'mid', text: '闸口集卡平均排队 18 分钟' },
+  { level: 'high', text: '进港航道船舶间距不足 0.3 海里' },
+  { level: 'low', text: 'C 区巡检完成，无异常' },
+  { level: 'mid', text: '1# 岸桥小车限位开关报警' },
+  { level: 'low', text: 'D 区堆场照明已切换夜间模式' }
 ];
 
 const CARGO_TYPES = [
@@ -33,58 +41,72 @@ const YARD_ZONES = [
 ];
 
 const BERTH_EFF = [
-  { name: '1号', value: 32 },
-  { name: '2号', value: 28 },
-  { name: '3号', value: 35 },
-  { name: '4号', value: 26 },
-  { name: '5号', value: 30 }
+  { name: '1#', value: 32 },
+  { name: '2#', value: 28 },
+  { name: '3#', value: 35 },
+  { name: '4#', value: 26 },
+  { name: '5#', value: 30 },
+  { name: '6#', value: 24 }
 ];
 
-// 12 小时吞吐趋势（基线 + 随机波动）
+function pad(n) { return String(n).padStart(2, '0'); }
+function hhmm(date) { return `${pad(date.getHours())}:${pad(date.getMinutes())}`; }
+function rand(min, max) { return min + Math.random() * (max - min); }
+function randInt(min, max) { return Math.round(rand(min, max)); }
+
+/** 生成近 12 小时吞吐趋势（带真实时间轴） */
 function genThroughputHistory() {
+  const now = new Date();
   const arr = [];
-  for (let i = 0; i < 12; i++) {
-    arr.push(1200 + Math.round(Math.sin(i / 2) * 300 + Math.random() * 200));
+  for (let i = 11; i >= 0; i--) {
+    const t = new Date(now.getTime() - i * 3600 * 1000);
+    const base = 1180 + Math.sin((11 - i) / 2.1) * 260;
+    arr.push({ label: hhmm(t), value: Math.round(base + rand(-90, 130)) });
   }
   return arr;
 }
 
 export const dataStore = {
-  throughput: 18650,      // 今日吞吐量 TEU
-  efficiency: 31,         // 作业效率 move/h
-  shipsInPort: 6,         // 船舶在港
-  yardRate: 74,           // 堆场利用率 %
-  craneActive: 8,         // 岸桥作业台数
+  throughput: 18650,       // 今日吞吐量 TEU
+  efficiency: 31.4,        // 作业效率 move/h
+  shipsInPort: 8,          // 船舶在港
+  yardRate: 74,            // 堆场利用率 %
+  craneActive: 9,          // 岸桥作业台数
+  berthRate: 82,           // 泊位占用率 %
+  trends: {                // 环比变化 %
+    throughput: 3.2,
+    efficiency: 1.8,
+    shipsInPort: 0,
+    yardRate: 2.1
+  },
   throughputHistory: genThroughputHistory(),
-  berthEff: BERTH_EFF,
-  yardZones: YARD_ZONES,
-  cargoTypes: CARGO_TYPES,
+  berthEff: BERTH_EFF.map(b => ({ ...b })),
+  yardZones: YARD_ZONES.map(z => ({ ...z })),
+  cargoTypes: CARGO_TYPES.map(c => ({ ...c })),
   ships: [],
   alerts: []
 };
 
-// 初始化船舶列表
-for (let i = 0; i < 5; i++) {
-  dataStore.ships.push({
-    name: SHIP_NAMES[i],
-    status: i < 3 ? '作业中' : '待泊',
-    eta: `${10 + i * 2}h`
-  });
-}
+// ---------- 初始化船舶在港列表 ----------
+dataStore.ships = SHIP_POOL.slice(0, 5).map((s, i) => ({
+  name: s.name,
+  berth: s.berth,
+  status: i < 3 ? '作业中' : '待泊',
+  progress: i < 3 ? randInt(25, 88) : 0
+}));
 
-// 初始化告警
-for (let i = 0; i < 4; i++) {
-  const t = ALERT_TEMPLATES[i];
-  dataStore.alerts.push({
-    time: `0${8 + i}:${10 + i * 7}`.replace(/(\d{2})\d/, '$1'),
-    level: t.level,
-    text: t.text
-  });
-}
+// ---------- 初始化告警 ----------
+const now0 = new Date();
+dataStore.alerts = [
+  { level: 'high', text: ALERT_TEMPLATES[0].text, time: hhmm(new Date(now0.getTime() - 6 * 60000)) },
+  { level: 'mid', text: ALERT_TEMPLATES[1].text, time: hhmm(new Date(now0.getTime() - 23 * 60000)) },
+  { level: 'low', text: ALERT_TEMPLATES[2].text, time: hhmm(new Date(now0.getTime() - 47 * 60000)) },
+  { level: 'mid', text: ALERT_TEMPLATES[3].text, time: hhmm(new Date(now0.getTime() - 72 * 60000)) }
+];
 
-// 实时更新：每 3 秒微调核心指标，每 10 秒刷新趋势/船舶/告警
-let tickCount = 0;
+// ---------- 订阅 / 分发 ----------
 const listeners = [];
+let tickCount = 0;
 
 export function onDataChange(cb) {
   listeners.push(cb);
@@ -94,58 +116,70 @@ function notify(scope) {
   listeners.forEach(fn => fn(dataStore, scope));
 }
 
-function randDelta(base, min, max, step) {
+function drift(base, min, max, step) {
   const v = base + (Math.random() - 0.5) * step;
-  return Math.round(Math.max(min, Math.min(max, v)));
+  return Math.max(min, Math.min(max, v));
 }
 
 function tick() {
   tickCount++;
 
-  // 核心指标小幅波动
-  dataStore.throughput += Math.round(Math.random() * 15 + 5);
-  dataStore.efficiency = randDelta(dataStore.efficiency, 26, 38, 2);
-  dataStore.yardRate = randDelta(dataStore.yardRate, 65, 88, 3);
-  dataStore.craneActive = randDelta(dataStore.craneActive, 6, 10, 1);
-  dataStore.shipsInPort = randDelta(dataStore.shipsInPort, 4, 8, 1);
+  // ---- 核心指标：每秒小幅波动 ----
+  dataStore.throughput += randInt(4, 16);
+  dataStore.efficiency = +drift(dataStore.efficiency, 26, 38, 1.4).toFixed(1);
+  dataStore.yardRate = Math.round(drift(dataStore.yardRate, 62, 92, 2));
+  dataStore.craneActive = Math.round(drift(dataStore.craneActive, 6, 12, 1));
+  dataStore.berthRate = Math.round(drift(dataStore.berthRate, 68, 96, 2));
+  dataStore.shipsInPort = Math.round(drift(dataStore.shipsInPort, 5, 11, 1));
+
+  dataStore.trends.efficiency = +drift(dataStore.trends.efficiency, -3.5, 5.5, 0.4).toFixed(1);
+  dataStore.trends.yardRate = +drift(dataStore.trends.yardRate, -2.5, 4.5, 0.3).toFixed(1);
   notify('kpi');
 
-  // 每 3 个 tick（约 9 秒）刷新趋势
+  // ---- 图表：每 3 tick（约 9 秒）刷新 ----
   if (tickCount % 3 === 0) {
     dataStore.throughputHistory.shift();
-    dataStore.throughputHistory.push(
-      1200 + Math.round(Math.sin(tickCount / 3) * 300 + Math.random() * 250)
-    );
-    // 泊位效率波动
-    dataStore.berthEff.forEach(b => {
-      b.value = randDelta(b.value, 22, 38, 4);
+    const base = 1180 + Math.sin(tickCount / 6) * 260;
+    dataStore.throughputHistory.push({
+      label: hhmm(new Date()),
+      value: Math.round(base + rand(-90, 150))
     });
-    // 堆场分区波动
-    dataStore.yardZones.forEach(z => {
-      z.rate = randDelta(z.rate, 45, 95, 5);
+
+    dataStore.berthEff.forEach(b => { b.value = Math.round(drift(b.value, 20, 40, 4)); });
+    dataStore.yardZones.forEach(z => { z.rate = Math.round(drift(z.rate, 45, 95, 4)); });
+
+    // 货类占比微调，保持总和 100
+    const total = dataStore.cargoTypes.reduce((s, c) => s + c.value, 0);
+    dataStore.cargoTypes.forEach(c => {
+      c.value = Math.max(3, Math.round(c.value * 100 / total));
     });
+    const sum = dataStore.cargoTypes.reduce((s, c) => s + c.value, 0);
+    dataStore.cargoTypes[0].value += 100 - sum;
     notify('charts');
   }
 
-  // 每 5 个 tick（约 15 秒）轮换船舶和告警
-  if (tickCount % 5 === 0) {
-    const idx = Math.floor(Math.random() * SHIP_NAMES.length);
-    dataStore.ships.shift();
-    dataStore.ships.push({
-      name: SHIP_NAMES[idx],
-      status: Math.random() > 0.4 ? '作业中' : '待泊',
-      eta: `${8 + Math.floor(Math.random() * 8)}h`
+  // ---- 列表：每 6 tick（约 18 秒）轮换 ----
+  if (tickCount % 6 === 0) {
+    dataStore.ships.forEach(s => {
+      if (s.status === '作业中') s.progress = Math.min(99, s.progress + randInt(1, 6));
     });
+    const finished = dataStore.ships.find(s => s.status === '作业中' && s.progress >= 99);
+    if (finished) {
+      const next = SHIP_POOL.find(p => !dataStore.ships.some(s => s.name === p.name));
+      if (next) {
+        finished.name = next.name;
+        finished.berth = next.berth;
+        finished.status = next.berth === '锚地' ? '待泊' : '作业中';
+        finished.progress = 0;
+      }
+    }
 
-    const a = ALERT_TEMPLATES[Math.floor(Math.random() * ALERT_TEMPLATES.length)];
-    const now = new Date();
-    const hh = String(now.getHours()).padStart(2, '0');
-    const mm = String(now.getMinutes()).padStart(2, '0');
-    dataStore.alerts.unshift({ time: `${hh}:${mm}`, level: a.level, text: a.text });
+    const tpl = ALERT_TEMPLATES[randInt(0, ALERT_TEMPLATES.length - 1)];
+    dataStore.alerts.unshift({ level: tpl.level, text: tpl.text, time: hhmm(new Date()) });
     if (dataStore.alerts.length > 5) dataStore.alerts.pop();
     notify('lists');
   }
 }
 
-// 启动实时更新
+// 启动实时更新（约 3 秒一轮）
 setInterval(tick, 3000);

@@ -10,41 +10,52 @@
   --accent-green: #00ffa3;
   --accent-red: #ff4d6d;
   --accent-orange: #ffb020;
+  --stage-w: 1920px;
+  --stage-h: 1080px;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 html, body {
-  width: 1920px;
-  height: 1080px;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
-  background: var(--bg-deep);
+  background: #02060f;
   color: var(--text-main);
-  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+  font-family: "Microsoft YaHei", "PingFang SC", "HarmonyOS Sans SC", sans-serif;
 }
 
-body {
+/* ========== 自适应舞台：1920x1080 设计稿等比缩放 ========== */
+#stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--stage-w);
+  height: var(--stage-h);
+  transform-origin: top left;
+  display: flex;
+  flex-direction: column;
   background:
-    radial-gradient(ellipse at 50% 0%, rgba(30, 111, 255, 0.15), transparent 60%),
-    radial-gradient(ellipse at 50% 100%, rgba(0, 212, 255, 0.08), transparent 50%),
+    radial-gradient(ellipse at 50% 0%, rgba(30, 111, 255, 0.16), transparent 60%),
+    radial-gradient(ellipse at 50% 100%, rgba(0, 212, 255, 0.09), transparent 55%),
     var(--bg-deep);
 }
 
 /* ========== 顶部栏 ========== */
 .top-bar {
-  height: 72px;
+  flex: 0 0 72px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 40px;
-  background: linear-gradient(180deg, rgba(8, 20, 40, 0.95), rgba(8, 20, 40, 0.6));
+  padding: 0 36px;
+  background: linear-gradient(180deg, rgba(8, 20, 40, 0.95), rgba(8, 20, 40, 0.55));
   border-bottom: 1px solid var(--border-glow);
   position: relative;
 }
 .top-bar::after {
   content: "";
   position: absolute;
-  left: 10%; right: 10%; bottom: 0;
+  left: 8%; right: 8%; bottom: 0;
   height: 2px;
   background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
   filter: blur(0.5px);
@@ -53,7 +64,7 @@ body {
   font-size: 30px;
   font-weight: 700;
   letter-spacing: 6px;
-  background: linear-gradient(90deg, #fff, var(--accent-cyan));
+  background: linear-gradient(90deg, #ffffff, var(--accent-cyan));
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -62,13 +73,21 @@ body {
 .top-bar__left, .top-bar__right {
   display: flex;
   align-items: center;
-  gap: 16px;
-  font-size: 16px;
+  gap: 14px;
+  font-size: 15px;
   color: var(--text-dim);
-  min-width: 320px;
+  flex: 0 0 380px;
 }
 .top-bar__right { justify-content: flex-end; }
 .top-bar__clock { color: var(--accent-cyan); font-variant-numeric: tabular-nums; font-size: 18px; }
+.top-bar__meta {
+  font-size: 13px;
+  color: var(--accent-cyan);
+  font-variant-numeric: tabular-nums;
+  padding: 2px 8px;
+  border: 1px solid var(--border-glow);
+  border-radius: 3px;
+}
 
 .status-dot {
   width: 10px; height: 10px; border-radius: 50%;
@@ -80,32 +99,36 @@ body {
 
 /* ========== 三栏布局 ========== */
 .layout {
-  height: calc(1080px - 72px);
+  flex: 1 1 auto;
+  min-height: 0;
   display: grid;
-  grid-template-columns: 380px 1fr 380px;
-  gap: 16px;
-  padding: 16px;
+  grid-template-columns: clamp(300px, 19.5vw, 380px) minmax(0, 1fr) clamp(300px, 19.5vw, 380px);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 14px;
+  padding: 14px 16px 16px;
 }
 
 /* ========== 面板通用 ========== */
 .panel {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
+  min-height: 0;
   overflow: hidden;
 }
 
 .kpi-grid {
+  flex: 0 0 auto;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  gap: 12px;
 }
 
 .kpi-card, .chart-card {
   background: var(--bg-panel);
   border: 1px solid var(--border-glow);
   border-radius: 6px;
-  padding: 14px 16px;
+  padding: 12px 14px;
   position: relative;
   backdrop-filter: blur(6px);
 }
@@ -126,49 +149,69 @@ body {
   border-right: 2px solid var(--accent-cyan);
 }
 
-.kpi-card__label { font-size: 14px; color: var(--text-dim); margin-bottom: 6px; }
+.kpi-card__label { font-size: 13px; color: var(--text-dim); margin-bottom: 6px; }
 .kpi-card__value {
-  font-size: 30px; font-weight: 700;
+  font-size: 28px; font-weight: 700;
   color: var(--accent-cyan);
   font-variant-numeric: tabular-nums;
   text-shadow: 0 0 10px rgba(0, 212, 255, 0.4);
+  white-space: nowrap;
 }
 .kpi-card__trend { font-size: 12px; margin-top: 4px; }
 .kpi-card__trend--up { color: var(--accent-green); }
 .kpi-card__trend--down { color: var(--accent-red); }
 
+.chart-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
 .chart-card__title {
-  font-size: 15px; color: var(--text-main);
-  margin-bottom: 10px;
-  padding-left: 10px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 14px; color: var(--text-main);
+  margin-bottom: 8px;
+  padding-left: 9px;
   border-left: 3px solid var(--accent-blue);
 }
-.chart-card canvas { width: 100%; display: block; }
-.chart-card--list { flex: 1; display: flex; flex-direction: column; }
+.chart-card__unit { font-size: 11px; color: var(--text-dim); letter-spacing: 0.5px; }
+.chart-card canvas { flex: 1 1 auto; width: 100%; min-height: 0; display: block; }
+.chart-card--list { flex: 1 1 0; }
+
+/* 面板内卡片高度分配（保证 1080 高度下不溢出、不拉伸变形） */
+.panel--left .chart-card:nth-of-type(1) { flex: 1.05 1 0; }
+.panel--left .chart-card:nth-of-type(2) { flex: 1.05 1 0; }
+.panel--right .chart-card:nth-of-type(1) { flex: 1.05 1 0; }
+.panel--right .chart-card:nth-of-type(2) { flex: 1.15 1 0; }
 
 /* ========== 船舶/告警列表 ========== */
 .ship-list, .alert-list {
   list-style: none;
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
 }
 .ship-list li, .alert-list li {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 7px 10px;
-  font-size: 13px;
+  gap: 8px;
+  padding: 6px 9px;
+  font-size: 12.5px;
   background: rgba(0, 212, 255, 0.06);
   border-left: 2px solid var(--accent-blue);
   border-radius: 3px;
 }
-.ship-list .ship-name { color: var(--text-main); }
-.ship-list .ship-status { color: var(--accent-green); font-size: 12px; }
+.ship-list .ship-name { color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ship-list .ship-status { color: var(--accent-green); font-size: 12px; white-space: nowrap; }
 .ship-list .ship-status--wait { color: var(--accent-orange); }
-.alert-list .alert-time { color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.alert-list .alert-time { color: var(--text-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.alert-list .alert-text { flex: 1 1 auto; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .alert-list .alert-level--high { color: var(--accent-red); }
 .alert-list .alert-level--mid { color: var(--accent-orange); }
 .alert-list .alert-level--low { color: var(--accent-green); }
@@ -176,30 +219,34 @@ body {
 /* ========== 中央场景 ========== */
 .scene-wrap {
   position: relative;
+  min-width: 0;
   border: 1px solid var(--border-glow);
   border-radius: 6px;
   overflow: hidden;
   background: linear-gradient(180deg, #04101f, #06182e);
 }
-#scene-container { width: 100%; height: 100%; }
-#scene-container canvas { display: block; }
+#scene-container { position: absolute; inset: 0; }
+#scene-container canvas { display: block; width: 100%; height: 100%; }
 
 .scene-overlay {
   position: absolute;
   padding: 8px 14px;
-  font-size: 14px;
-  color: var(--text-dim);
-  background: rgba(5, 11, 24, 0.6);
+  min-width: 118px;
+  text-align: center;
+  background: rgba(5, 11, 24, 0.62);
   border: 1px solid var(--border-glow);
   border-radius: 4px;
   backdrop-filter: blur(4px);
 }
-.scene-overlay span { color: var(--accent-cyan); font-weight: 700; font-size: 18px; }
-.scene-overlay--bl { bottom: 50px; left: 20px; }
-.scene-overlay--br { bottom: 50px; right: 20px; }
+.scene-overlay__label { font-size: 12px; color: var(--text-dim); margin-bottom: 2px; }
+.scene-overlay__value { font-size: 20px; font-weight: 700; color: var(--accent-cyan); font-variant-numeric: tabular-nums; }
+.scene-overlay--bl { bottom: 18px; left: 18px; }
+.scene-overlay--bc { bottom: 18px; left: 50%; transform: translateX(-50%); }
+.scene-overlay--br { bottom: 18px; right: 18px; }
+
 .scene-tag {
   position: absolute;
-  top: 16px; left: 50%;
+  top: 14px; left: 50%;
   transform: translateX(-50%);
   padding: 6px 18px;
   font-size: 13px;
@@ -209,3 +256,42 @@ body {
   border-radius: 20px;
   letter-spacing: 2px;
 }
+
+.scene-legend {
+  position: absolute;
+  top: 14px; left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 9px 12px;
+  font-size: 12px;
+  color: var(--text-dim);
+  background: rgba(5, 11, 24, 0.5);
+  border: 1px solid var(--border-glow);
+  border-radius: 4px;
+}
+.scene-legend span { display: flex; align-items: center; gap: 7px; }
+.scene-legend .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.dot--crane { background: #ffb020; box-shadow: 0 0 6px #ffb020; }
+.dot--ship { background: #4a8fff; box-shadow: 0 0 6px #4a8fff; }
+.dot--yard { background: #00ffa3; box-shadow: 0 0 6px #00ffa3; }
+.dot--truck { background: #ff4d6d; box-shadow: 0 0 6px #ff4d6d; }
+
+/* ========== 启动失败提示 ========== */
+.boot-error {
+  position: absolute;
+  inset: 0;
+  z-index: 99;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: rgba(2, 6, 15, 0.94);
+  color: var(--text-main);
+  text-align: center;
+  padding: 40px;
+}
+.boot-error[hidden] { display: none; }
+.boot-error h2 { font-size: 24px; color: var(--accent-red); letter-spacing: 2px; }
+.boot-error p { font-size: 15px; color: var(--text-dim); max-width: 720px; line-height: 1.7; }

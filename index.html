@@ -2,105 +2,146 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=1920, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>港口生产数字化大屏</title>
   <link rel="stylesheet" href="css/style.css" />
+  <!-- Three.js 已本地化到 vendor/，无需外网 CDN -->
   <script type="importmap">
   {
     "imports": {
-      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      "three": "./vendor/three/build/three.module.js",
+      "three/addons/": "./vendor/three/examples/jsm/"
     }
   }
   </script>
 </head>
 <body>
-  <!-- 顶部标题栏 -->
-  <header class="top-bar">
-    <div class="top-bar__left">
-      <span class="top-bar__date" id="currentDate">2026-11-13 星期五</span>
-      <span class="top-bar__clock" id="currentClock">09:26:00</span>
-    </div>
-    <h1 class="top-bar__title">港口生产数字化管控平台</h1>
-    <div class="top-bar__right">
-      <span class="status-dot status-dot--online"></span>
-      <span class="top-bar__status">系统运行中</span>
-    </div>
-  </header>
+  <!-- 1920x1080 设计舞台，按屏幕尺寸等比缩放实现自适应 -->
+  <div id="stage">
+    <!-- 顶部标题栏 -->
+    <header class="top-bar">
+      <div class="top-bar__left">
+        <span class="top-bar__date" id="currentDate">2026-11-13 星期五</span>
+        <span class="top-bar__clock" id="currentClock">09:58:00</span>
+      </div>
+      <h1 class="top-bar__title">港口生产数字化管控平台</h1>
+      <div class="top-bar__right">
+        <span class="top-bar__meta" id="fpsMeter">-- FPS</span>
+        <span class="status-dot status-dot--online"></span>
+        <span class="top-bar__status">系统运行中</span>
+      </div>
+    </header>
 
-  <!-- 主体三栏布局 -->
-  <main class="layout">
-    <!-- 左侧面板 -->
-    <aside class="panel panel--left">
-      <div class="kpi-grid">
-        <div class="kpi-card" data-key="throughput">
-          <div class="kpi-card__label">今日吞吐量</div>
-          <div class="kpi-card__value" data-counter data-suffix=" TEU">0</div>
-          <div class="kpi-card__trend kpi-card__trend--up">▲ 3.2%</div>
+    <!-- 主体三栏布局 -->
+    <main class="layout">
+      <!-- 左侧面板 -->
+      <aside class="panel panel--left">
+        <div class="kpi-grid">
+          <div class="kpi-card" data-key="throughput">
+            <div class="kpi-card__label">今日吞吐量</div>
+            <div class="kpi-card__value" data-counter data-suffix=" TEU">0</div>
+            <div class="kpi-card__trend kpi-card__trend--up" data-trend="throughput">▲ 3.2%</div>
+          </div>
+          <div class="kpi-card" data-key="efficiency">
+            <div class="kpi-card__label">作业效率</div>
+            <div class="kpi-card__value" data-counter data-suffix=" move/h">0</div>
+            <div class="kpi-card__trend kpi-card__trend--up" data-trend="efficiency">▲ 1.8%</div>
+          </div>
         </div>
-        <div class="kpi-card" data-key="efficiency">
-          <div class="kpi-card__label">作业效率</div>
-          <div class="kpi-card__value" data-counter data-suffix=" move/h">0</div>
-          <div class="kpi-card__trend kpi-card__trend--up">▲ 1.8%</div>
+
+        <div class="chart-card">
+          <div class="chart-card__title">近 12 小时吞吐趋势<span class="chart-card__unit">TEU / h</span></div>
+          <canvas id="chartThroughput"></canvas>
         </div>
-      </div>
 
-      <div class="chart-card">
-        <div class="chart-card__title">近 12 小时吞吐趋势</div>
-        <canvas id="chartThroughput" width="320" height="160"></canvas>
-      </div>
-
-      <div class="chart-card">
-        <div class="chart-card__title">各泊位作业效率</div>
-        <canvas id="chartBerthEff" width="320" height="180"></canvas>
-      </div>
-
-      <div class="chart-card chart-card--list">
-        <div class="chart-card__title">船舶在港动态</div>
-        <ul class="ship-list" id="shipList"></ul>
-      </div>
-    </aside>
-
-    <!-- 中央三维场景 -->
-    <section class="scene-wrap">
-      <div id="scene-container"></div>
-      <div class="scene-overlay scene-overlay--bl">堆场利用率 <span data-key="yardRate" data-counter data-suffix="%">0</span></div>
-      <div class="scene-overlay scene-overlay--br">岸桥作业 <span data-key="craneActive" data-counter data-suffix=" 台">0</span></div>
-      <div class="scene-tag">3D 实时场景 · DOF 景深渲染</div>
-    </section>
-
-    <!-- 右侧面板 -->
-    <aside class="panel panel--right">
-      <div class="kpi-grid">
-        <div class="kpi-card" data-key="shipsInPort">
-          <div class="kpi-card__label">船舶在港</div>
-          <div class="kpi-card__value" data-counter data-suffix=" 艘">0</div>
-          <div class="kpi-card__trend kpi-card__trend--down">▼ 0</div>
+        <div class="chart-card">
+          <div class="chart-card__title">各泊位作业效率<span class="chart-card__unit">move / h</span></div>
+          <canvas id="chartBerthEff"></canvas>
         </div>
-        <div class="kpi-card" data-key="yardRate">
-          <div class="kpi-card__label">堆场利用率</div>
-          <div class="kpi-card__value" data-counter data-suffix="%">0</div>
-          <div class="kpi-card__trend kpi-card__trend--up">▲ 2.1%</div>
+
+        <div class="chart-card chart-card--list">
+          <div class="chart-card__title">船舶在港动态<span class="chart-card__unit" id="shipCountTag">-- 艘</span></div>
+          <ul class="ship-list" id="shipList"></ul>
         </div>
-      </div>
+      </aside>
 
-      <div class="chart-card">
-        <div class="chart-card__title">堆场分区利用率</div>
-        <canvas id="chartYardZone" width="320" height="180"></canvas>
-      </div>
+      <!-- 中央三维场景 -->
+      <section class="scene-wrap">
+        <div id="scene-container"></div>
+        <div class="scene-tag">3D 实时场景 · DOF 景深渲染</div>
+        <div class="scene-legend">
+          <span><i class="dot dot--crane"></i>岸桥</span>
+          <span><i class="dot dot--ship"></i>船舶</span>
+          <span><i class="dot dot--yard"></i>堆场</span>
+          <span><i class="dot dot--truck"></i>集卡</span>
+        </div>
+        <div class="scene-overlay scene-overlay--bl">
+          <div class="scene-overlay__label">堆场利用率</div>
+          <div class="scene-overlay__value"><span data-key="yardRate" data-counter data-suffix="%">0</span></div>
+        </div>
+        <div class="scene-overlay scene-overlay--bc">
+          <div class="scene-overlay__label">岸桥作业</div>
+          <div class="scene-overlay__value"><span data-key="craneActive" data-counter data-suffix=" 台">0</span></div>
+        </div>
+        <div class="scene-overlay scene-overlay--br">
+          <div class="scene-overlay__label">泊位占用</div>
+          <div class="scene-overlay__value"><span data-key="berthRate" data-counter data-suffix="%">0</span></div>
+        </div>
+      </section>
 
-      <div class="chart-card">
-        <div class="chart-card__title">货物类型占比</div>
-        <canvas id="chartCargoType" width="320" height="180"></canvas>
-      </div>
+      <!-- 右侧面板 -->
+      <aside class="panel panel--right">
+        <div class="kpi-grid">
+          <div class="kpi-card" data-key="shipsInPort">
+            <div class="kpi-card__label">船舶在港</div>
+            <div class="kpi-card__value" data-counter data-suffix=" 艘">0</div>
+            <div class="kpi-card__trend kpi-card__trend--down" data-trend="shipsInPort">▼ 0 艘</div>
+          </div>
+          <div class="kpi-card" data-key="yardRate">
+            <div class="kpi-card__label">堆场利用率</div>
+            <div class="kpi-card__value" data-counter data-suffix="%">0</div>
+            <div class="kpi-card__trend kpi-card__trend--up" data-trend="yardRate">▲ 2.1%</div>
+          </div>
+        </div>
 
-      <div class="chart-card chart-card--list">
-        <div class="chart-card__title">告警事件</div>
-        <ul class="alert-list" id="alertList"></ul>
-      </div>
-    </aside>
-  </main>
+        <div class="chart-card">
+          <div class="chart-card__title">堆场分区利用率<span class="chart-card__unit">%</span></div>
+          <canvas id="chartYardZone"></canvas>
+        </div>
 
+        <div class="chart-card">
+          <div class="chart-card__title">货物类型占比<span class="chart-card__unit">TEU</span></div>
+          <canvas id="chartCargoType"></canvas>
+        </div>
+
+        <div class="chart-card chart-card--list">
+          <div class="chart-card__title">告警事件<span class="chart-card__unit" id="alertCountTag">-- 条</span></div>
+          <ul class="alert-list" id="alertList"></ul>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <!-- 加载失败提示（模块或 WebGL 不可用时显示，避免白屏无从排查） -->
+  <div id="boot-error" class="boot-error" hidden>
+    <h2>大屏初始化失败</h2>
+    <p id="boot-error-msg">3D 引擎未能启动，请使用支持 WebGL 的现代浏览器（Chrome / Edge）打开。</p>
+  </div>
+  <script>
+    window.addEventListener('error', function (e) {
+      var box = document.getElementById('boot-error');
+      if (!window.__PORT_BOOTED__ && box) {
+        box.hidden = false;
+        document.getElementById('boot-error-msg').textContent = '资源加载出错：' + (e.message || '未知错误');
+      }
+    });
+    setTimeout(function () {
+      if (!window.__PORT_BOOTED__) {
+        var box = document.getElementById('boot-error');
+        if (box) box.hidden = false;
+      }
+    }, 12000);
+  </script>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>
